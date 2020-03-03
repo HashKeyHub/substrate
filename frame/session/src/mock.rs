@@ -18,7 +18,7 @@
 
 use super::*;
 use std::cell::RefCell;
-use frame_support::{impl_outer_origin, parameter_types, weights::Weight};
+use frame_support::{impl_outer_origin, impl_outer_dispatch, parameter_types, weights::Weight};
 use sp_core::{crypto::key_types::DUMMY, H256};
 use sp_runtime::{
 	Perbill, impl_opaque_keys,
@@ -41,6 +41,12 @@ impl From<UintAuthorityId> for MockSessionKeys {
 
 impl_outer_origin! {
 	pub enum Origin for Test  where system = frame_system {}
+}
+
+impl_outer_dispatch! {
+	pub enum Call for Test where origin: Origin {
+        self::System,
+    }
 }
 
 thread_local! {
@@ -165,7 +171,7 @@ impl frame_system::Trait for Test {
 	type Origin = Origin;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Call = ();
+	type Call = Call;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;

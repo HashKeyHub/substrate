@@ -70,9 +70,10 @@ use frame_support::{traits::{Get, ReservableCurrency, Currency},
 	weights::{GetDispatchInfo, DispatchClass,FunctionOf},
 };
 use frame_system::{self as system, ensure_signed};
-use sp_runtime::{DispatchError, DispatchResult, traits::Dispatchable};
+use sp_runtime::{DispatchError, DispatchResult, traits::{Dispatchable, Dispatcher}};
 
-type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+type BalanceOf<T> =
+	<<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Configuration trait.
 pub trait Trait: frame_system::Trait {
@@ -98,6 +99,9 @@ pub trait Trait: frame_system::Trait {
 
 	/// The maximum amount of signatories allowed in the multisig.
 	type MaxSignatories: Get<u16>;
+
+	/// The dispatcher of calls/proposals.
+	type Dispatcher: Dispatcher<<Self as Trait>::Call>;
 }
 
 /// A global extrinsic index, formed as the extrinsic index within a block, together with that
@@ -241,7 +245,7 @@ decl_module! {
 		)]
 		fn batch(origin, calls: Vec<<T as Trait>::Call>) {
 			for (index, call) in calls.into_iter().enumerate() {
-				let result = call.dispatch(origin.clone());
+				let result = T::Dispatcher::dispatch(call, origin.clone());
 				if let Err(e) = result {
 					Self::deposit_event(Event::<T>::BatchInterrupted(index as u32, e));
 					return Ok(());
@@ -265,7 +269,7 @@ decl_module! {
 		fn as_sub(origin, index: u16, call: Box<<T as Trait>::Call>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let pseudonym = Self::sub_account_id(who, index);
-			call.dispatch(frame_system::RawOrigin::Signed(pseudonym).into())
+			T::Dispatcher::dispatch(*call, frame_system::RawOrigin::Signed(pseudonym).into())
 		}
 
 		/// Register approval for a dispatch to be made from a deterministic composite account if
@@ -351,7 +355,11 @@ decl_module! {
 					}
 				}
 
-				let result = call.dispatch(frame_system::RawOrigin::Signed(id.clone()).into());
+				let result =
+					T::Dispatcher::dispatch(
+						*call,
+						frame_system::RawOrigin::Signed(id.clone()).into()
+					);
 				let _ = T::Currency::unreserve(&m.depositor, m.deposit);
 				<Multisigs<T>>::remove(&id, call_hash);
 				Self::deposit_event(RawEvent::MultisigExecuted(who, timepoint, id, result));
@@ -369,7 +377,7 @@ decl_module! {
 					});
 					Self::deposit_event(RawEvent::NewMultisig(who, id));
 				} else {
-					return call.dispatch(frame_system::RawOrigin::Signed(id).into())
+					return T::Dispatcher::dispatch(*call, frame_system::RawOrigin::Signed(id).into())
 				}
 			}
 			Ok(())
@@ -648,6 +656,7 @@ mod tests {
 		type MultisigDepositBase = MultisigDepositBase;
 		type MultisigDepositFactor = MultisigDepositFactor;
 		type MaxSignatories = MaxSignatories;
+		type Dispatcher = System;
 	}
 	type System = frame_system::Module<Test>;
 	type Balances = pallet_balances::Module<Test>;

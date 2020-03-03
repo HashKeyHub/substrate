@@ -17,10 +17,8 @@
 //! Generic implementation of an extrinsic that has passed the verification
 //! stage.
 
-use crate::traits::{
-	self, Member, MaybeDisplay, SignedExtension, Dispatchable,
-};
 use crate::traits::ValidateUnsigned;
+use crate::traits::{self, Dispatchable, Dispatcher, MaybeDisplay, Member, SignedExtension};
 use crate::transaction_validity::TransactionValidity;
 
 /// Definition of something that the external world might want to say; its
@@ -36,12 +34,12 @@ pub struct CheckedExtrinsic<AccountId, Call, Extra> {
 	pub function: Call,
 }
 
-impl<AccountId, Call, Extra, Origin, Info> traits::Applyable for
-	CheckedExtrinsic<AccountId, Call, Extra>
+impl<AccountId, Call, Extra, Origin, Info> traits::Applyable
+	for CheckedExtrinsic<AccountId, Call, Extra>
 where
 	AccountId: Member + MaybeDisplay,
-	Call: Member + Dispatchable<Origin=Origin>,
-	Extra: SignedExtension<AccountId=AccountId, Call=Call, DispatchInfo=Info>,
+	Call: Member + Dispatchable<Origin = Origin>,
+	Extra: SignedExtension<AccountId = AccountId, Call = Call, DispatchInfo = Info>,
 	Origin: From<Option<AccountId>>,
 	Info: Clone,
 {
@@ -62,7 +60,7 @@ where
 		}
 	}
 
-	fn apply<U: ValidateUnsigned<Call=Self::Call>>(
+	fn apply<U: ValidateUnsigned<Call = Self::Call>, D: Dispatcher<Self::Call>>(
 		self,
 		info: Self::DispatchInfo,
 		len: usize,
@@ -75,7 +73,7 @@ where
 			U::pre_dispatch(&self.function)?;
 			(None, pre)
 		};
-		let res = self.function.dispatch(Origin::from(maybe_who));
+		let res = D::dispatch(self.function, Origin::from(maybe_who));
 		Extra::post_dispatch(pre, info.clone(), len);
 		Ok(res.map_err(Into::into))
 	}

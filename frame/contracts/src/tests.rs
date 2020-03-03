@@ -103,7 +103,7 @@ impl frame_system::Trait for Test {
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Call = ();
+	type Call = Call;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
@@ -174,6 +174,7 @@ impl Trait for Test {
 	type MaxDepth = MaxDepth;
 	type MaxValueSize = MaxValueSize;
 	type BlockGasLimit = BlockGasLimit;
+	type Dispatcher = System;
 }
 
 type Balances = pallet_balances::Module<Test>;

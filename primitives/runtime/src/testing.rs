@@ -345,9 +345,11 @@ impl<Call: Codec + Sync + Send, Extra> traits::Extrinsic for TestXt<Call, Extra>
 	}
 }
 
-impl<Origin, Call, Extra, Info> Applyable for TestXt<Call, Extra> where
-	Call: 'static + Sized + Send + Sync + Clone + Eq + Codec + Debug + Dispatchable<Origin=Origin>,
-	Extra: SignedExtension<AccountId=u64, Call=Call, DispatchInfo=Info>,
+impl<Origin, Call, Extra, Info> Applyable for TestXt<Call, Extra>
+where
+	Call:
+		'static + Sized + Send + Sync + Clone + Eq + Codec + Debug + Dispatchable<Origin = Origin>,
+	Extra: SignedExtension<AccountId = u64, Call = Call, DispatchInfo = Info>,
 	Origin: From<Option<u64>>,
 	Info: Clone,
 {
@@ -365,19 +367,20 @@ impl<Origin, Call, Extra, Info> Applyable for TestXt<Call, Extra> where
 
 	/// Executes all necessary logic needed prior to dispatch and deconstructs into function call,
 	/// index and sender.
-	fn apply<U: ValidateUnsigned<Call=Self::Call>>(
+	fn apply<U: ValidateUnsigned<Call = Self::Call>, D: crate::traits::Dispatcher<Self::Call>>(
 		self,
 		info: Self::DispatchInfo,
 		len: usize,
 	) -> ApplyExtrinsicResult {
-		let maybe_who = if let Some((who, extra)) = self.signature {
-			Extra::pre_dispatch(extra, &who, &self.call, info, len)?;
-			Some(who)
+		let (maybe_who, pre) = if let Some((who, extra)) = self.signature {
+			let pre = Extra::pre_dispatch(extra, &who, &self.call, info.clone(), len)?;
+			(Some(who), pre)
 		} else {
-			Extra::pre_dispatch_unsigned(&self.call, info, len)?;
-			None
+			let pre = Extra::pre_dispatch_unsigned(&self.call, info.clone(), len)?;
+			(None, pre)
 		};
-
-		Ok(self.call.dispatch(maybe_who.into()).map_err(Into::into))
+		let r = D::dispatch(self.call, maybe_who.into()).map_err(Into::into);
+		Extra::post_dispatch(pre, info.clone(), len);
+		Ok(r)
 	}
 }

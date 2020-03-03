@@ -2,13 +2,19 @@
 
 use crate::{Module, Trait};
 use sp_core::H256;
-use frame_support::{impl_outer_origin, parameter_types, weights::Weight};
+use frame_support::{impl_outer_origin, impl_outer_dispatch, parameter_types, weights::Weight};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup}, testing::Header, Perbill,
 };
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
+}
+
+impl_outer_dispatch! {
+	pub enum Call for Test where origin: Origin {
+		self::System,
+	}
 }
 
 // For testing the pallet, we construct most of a mock runtime. This means
@@ -24,7 +30,7 @@ parameter_types! {
 }
 impl system::Trait for Test {
 	type Origin = Origin;
-	type Call = ();
+	type Call = Call;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;
@@ -47,6 +53,7 @@ impl Trait for Test {
 	type Event = ();
 }
 pub type TemplateModule = Module<Test>;
+pub type System = system::Module<Test>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.

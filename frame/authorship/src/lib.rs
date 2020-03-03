@@ -398,10 +398,18 @@ mod tests {
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentityLookup}, testing::Header, generic::DigestItem, Perbill,
 	};
-	use frame_support::{parameter_types, impl_outer_origin, ConsensusEngineId, weights::Weight};
+	use frame_support::{
+		parameter_types, impl_outer_origin, impl_outer_dispatch, ConsensusEngineId, weights::Weight
+	};
 
-	impl_outer_origin!{
+	impl_outer_origin! {
 		pub enum Origin for Test  where system = frame_system {}
+	}
+
+	impl_outer_dispatch! {
+		pub enum Call for Test where origin: Origin {
+			self::System,
+		}
 	}
 
 	#[derive(Clone, Eq, PartialEq)]
@@ -418,7 +426,7 @@ mod tests {
 		type Origin = Origin;
 		type Index = u64;
 		type BlockNumber = u64;
-		type Call = ();
+		type Call = Call;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;
 		type AccountId = u64;

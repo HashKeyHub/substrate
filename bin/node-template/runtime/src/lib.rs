@@ -219,6 +219,7 @@ impl transaction_payment::Trait for Runtime {
 impl sudo::Trait for Runtime {
 	type Event = Event;
 	type Call = Call;
+	type Dispatcher = ();
 }
 
 /// Used for the module template in `./template.rs`
@@ -269,7 +270,14 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
-pub type Executive = frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
+pub type Executive = frame_executive::Executive<
+	Runtime,
+	Block,
+	system::ChainContext<Runtime>,
+	Runtime,
+	AllModules,
+	()
+>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

@@ -39,7 +39,7 @@ use sp_runtime::{
 	},
 	traits::{
 		BlindCheckable, BlakeTwo256, Block as BlockT, Extrinsic as ExtrinsicT,
-		GetNodeBlockType, GetRuntimeBlockType, Verify, IdentityLookup,
+		GetNodeBlockType, GetRuntimeBlockType, Verify, IdentityLookup, Dispatchable,
 	},
 };
 use sp_version::RuntimeVersion;
@@ -180,6 +180,17 @@ impl ExtrinsicT for Extrinsic {
 
 	fn new(call: Self::Call, _signature_payload: Option<Self::SignaturePayload>) -> Option<Self> {
 		Some(call)
+	}
+}
+
+impl Dispatchable for Extrinsic {
+	type Origin = Origin;
+	type Trait = ();
+
+	fn dispatch(self, _: Origin) -> sp_runtime::DispatchResult {
+		match self {
+			_ => panic!("the extrinsic is not supposed to be dispatched"),
+		}
 	}
 }
 

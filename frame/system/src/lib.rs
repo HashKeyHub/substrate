@@ -90,26 +90,27 @@
 
 #[cfg(feature = "std")]
 use serde::Serialize;
-use sp_std::prelude::*;
+use sp_runtime::{
+	generic::{self, Era},
+	traits::{
+		self, AtLeast32Bit, BadOrigin, Bounded, CheckEqual, Dispatchable, EnsureOrigin, Hash,
+		Lookup, LookupError, MaybeDisplay, MaybeMallocSizeOf, MaybeSerialize,
+		MaybeSerializeDeserialize, Member, One, SaturatedConversion, SignedExtension, SimpleBitOps,
+		StaticLookup, Zero,
+	},
+	transaction_validity::{
+		InvalidTransaction, TransactionLongevity, TransactionPriority, TransactionValidity,
+		TransactionValidityError, ValidTransaction,
+	},
+	DispatchError, DispatchOutcome, Perbill, RuntimeDebug,
+};
+use sp_std::convert::Infallible;
+use sp_std::fmt::Debug;
 #[cfg(any(feature = "std", test))]
 use sp_std::map;
-use sp_std::convert::Infallible;
 use sp_std::marker::PhantomData;
-use sp_std::fmt::Debug;
+use sp_std::prelude::*;
 use sp_version::RuntimeVersion;
-use sp_runtime::{
-	RuntimeDebug, Perbill, DispatchOutcome, DispatchError,
-	generic::{self, Era},
-	transaction_validity::{
-		ValidTransaction, TransactionPriority, TransactionLongevity, TransactionValidityError,
-		InvalidTransaction, TransactionValidity,
-	},
-	traits::{
-		self, CheckEqual, AtLeast32Bit, Zero, SignedExtension, Lookup, LookupError,
-		SimpleBitOps, Hash, Member, MaybeDisplay, EnsureOrigin, BadOrigin, SaturatedConversion,
-		MaybeSerialize, MaybeSerializeDeserialize, MaybeMallocSizeOf, StaticLookup, One, Bounded,
-	},
-};
 
 use sp_core::{ChangesTrieConfiguration, storage::well_known_keys};
 use frame_support::{
@@ -145,7 +146,7 @@ pub trait Trait: 'static + Eq + Clone {
 		+ Clone;
 
 	/// The aggregated `Call` type.
-	type Call: Debug;
+	type Call: Debug + Dispatchable<Origin = Self::Origin>;
 
 	/// Account index (aka nonce) type. This stores the number of previous transactions associated
 	/// with a sender account.
@@ -1002,6 +1003,15 @@ impl<T: Trait> Module<T> {
 			}
 			Module::<T>::on_killed_account(who.clone());
 		}
+	}
+}
+
+impl<T: Trait> sp_runtime::traits::Dispatcher<T::Call> for Module<T> {
+	fn dispatch(
+		dispatchable: T::Call,
+		origin: <T::Call as Dispatchable>::Origin,
+	) -> sp_runtime::DispatchResult {
+		dispatchable.dispatch(origin)
 	}
 }
 

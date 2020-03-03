@@ -30,13 +30,19 @@ use sp_runtime::testing::Header;
 use sp_runtime::traits::{IdentityLookup, BlakeTwo256};
 use sp_core::H256;
 use frame_support::{
-	impl_outer_origin, impl_outer_event, parameter_types, StorageMap, StorageDoubleMap,
-	weights::Weight,
+	impl_outer_origin, impl_outer_event, impl_outer_dispatch, parameter_types, StorageMap,
+	StorageDoubleMap, weights::Weight,
 };
 use frame_system as system;
 
-impl_outer_origin!{
+impl_outer_origin! {
 	pub enum Origin for Runtime {}
+}
+
+impl_outer_dispatch! {
+	pub enum Call for Runtime where origin: Origin {
+		self::System,
+	}
 }
 
 pub struct OnOffenceHandler;
@@ -76,7 +82,7 @@ impl frame_system::Trait for Runtime {
 	type Origin = Origin;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Call = ();
+	type Call = Call;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
