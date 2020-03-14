@@ -22,7 +22,7 @@ use sp_runtime::testing::Header;
 use sp_runtime::Perbill;
 use sp_core::H256;
 use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
-use crate::{self as indices, Module, Trait};
+use crate::{self as indices, Module, Call, Trait};
 use frame_system as system;
 use pallet_balances as balances;
 
@@ -50,7 +50,7 @@ parameter_types! {
 
 impl frame_system::Trait for Test {
 	type Origin = Origin;
-	type Call = ();
+	type Call = Call<Test>;
 	type Index = u64;
 	type BlockNumber = u64;
 	type Hash = H256;

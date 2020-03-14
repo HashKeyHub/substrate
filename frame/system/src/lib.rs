@@ -1530,7 +1530,7 @@ mod tests {
 
 	impl Trait for Test {
 		type Origin = Origin;
-		type Call = ();
+		type Call = Call<Test>;
 		type Index = u64;
 		type BlockNumber = u64;
 		type Hash = H256;
@@ -1563,7 +1563,7 @@ mod tests {
 
 	type System = Module<Test>;
 
-	const CALL: &<Test as Trait>::Call = &();
+	const CALL: &<Test as Trait>::Call = &Call::<Test>::remark(Vec::new());
 
 	fn new_test_ext() -> sp_io::TestExternalities {
 		GenesisConfig::default().build_storage::<Test>().unwrap().into()

@@ -23,7 +23,7 @@ use sp_io;
 use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
 use sp_core::H256;
 use codec::{Encode, Decode};
-use crate::{AuthorityId, AuthorityList, GenesisConfig, Trait, Module, ConsensusLog};
+use crate::{AuthorityId, AuthorityList, GenesisConfig, Trait, Module, Call, ConsensusLog};
 use sp_finality_grandpa::GRANDPA_ENGINE_ID;
 
 use frame_system as system;
@@ -52,7 +52,7 @@ impl frame_system::Trait for Test {
 	type Origin = Origin;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Call = ();
+	type Call = Call<Test>;
 	type Hash = H256;
 	type Hashing = sp_runtime::traits::BlakeTwo256;
 	type AccountId = u64;

@@ -279,7 +279,7 @@ mod tests {
 	impl frame_system::Trait for Test {
 		type Origin = Origin;
 		type Index = u64;
-		type Call = ();
+		type Call = Call<Test>;
 		type BlockNumber = u64;
 		type Hash = H256;
 		type Hashing = BlakeTwo256;

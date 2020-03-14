@@ -32,7 +32,8 @@ use frame_support::{
 };
 use crate::{
 	EraIndex, GenesisConfig, Module, Trait, StakerStatus, ValidatorPrefs, RewardDestination,
-	Nominators, inflation, SessionInterface, Exposure, ErasStakers, ErasRewardPoints
+	Nominators, inflation, SessionInterface, Exposure, ErasStakers, ErasRewardPoints,
+	Call
 };
 
 /// The AccountId alias in this test module.
@@ -126,7 +127,7 @@ impl frame_system::Trait for Test {
 	type Origin = Origin;
 	type Index = u64;
 	type BlockNumber = BlockNumber;
-	type Call = ();
+	type Call = Call<Test>;
 	type Hash = H256;
 	type Hashing = ::sp_runtime::traits::BlakeTwo256;
 	type AccountId = AccountId;

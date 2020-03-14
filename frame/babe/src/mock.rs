@@ -16,7 +16,7 @@
 
 //! Test utilities
 
-use super::{Trait, Module, GenesisConfig};
+use super::{Trait, Module, Call, GenesisConfig};
 use sp_runtime::{
 	traits::IdentityLookup, Perbill, testing::{Header, UintAuthorityId}, impl_opaque_keys,
 };
@@ -51,7 +51,7 @@ impl frame_system::Trait for Test {
 	type Origin = Origin;
 	type Index = u64;
 	type BlockNumber = u64;
-	type Call = ();
+	type Call = Call<Test>;
 	type Hash = H256;
 	type Version = Version;
 	type Hashing = sp_runtime::traits::BlakeTwo256;
