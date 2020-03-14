@@ -222,38 +222,6 @@ impl<Block: BlockT, Executor, Backend, G: GenesisInit> TestClientBuilder<Block, 
 	}
 }
 
-#[derive(Debug, Clone)]
-struct LocalSpawn {
-	pool: executor::ThreadPool,
-}
-
-impl LocalSpawn {
-	fn new() -> Self {
-		Self {
-			pool: executor::ThreadPool::builder().pool_size(1).create()
-				.expect("Failed to create task executor")
-		}
-	}
-}
-
-impl task::Spawn for LocalSpawn {
-	fn spawn_obj(&self, future: task::FutureObj<'static, ()>)
-	-> Result<(), task::SpawnError> {
-		self.pool.spawn_obj(future)
-	}
-}
-
-impl sc_client_api::ClonableSpawn for LocalSpawn {
-	fn clone(&self) -> Box<dyn ClonableSpawn> {
-		Box::new(Clone::clone(self))
-	}
-}
-
-/// Creates tasks executor for test client.
-pub fn local_task_executor() -> Box<dyn ClonableSpawn> {
-	Box::new(LocalSpawn::new())
-}
-
 impl<Block: BlockT, E, Backend, G: GenesisInit> TestClientBuilder<
 	Block,
 	sc_client::LocalCallExecutor<Backend, NativeExecutor<E>>,
