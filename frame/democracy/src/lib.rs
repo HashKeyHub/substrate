@@ -168,7 +168,9 @@ use frame_support::{
 };
 use frame_system::{self as system, ensure_signed, ensure_root};
 
+#[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
+
 mod vote_threshold;
 
 pub use vote_threshold::{Approved, VoteThreshold};
@@ -639,8 +641,6 @@ decl_module! {
 			T::Currency::reserve(&who, value)?;
 
 			let index = Self::public_prop_count();
-			#[cfg(feature = "std")]
-			println!("add proposed with index {:?}", index);
 
 			PublicPropCount::put(index + 1);
 			<DepositOf<T>>::insert(index, (value, &[&who][..]));
@@ -727,7 +727,9 @@ decl_module! {
 		/// # </weight>
 		#[weight = SimpleDispatchInfo::FixedOperational(500_000)]
 		fn emergency_cancel(origin, ref_index: ReferendumIndex) {
-			T::CancellationOrigin::ensure_origin(origin)?;
+			T::CancellationOrigin::try_origin(origin)
+				.map(|_| ())
+				.or_else(ensure_root)?;
 
 			let info = Self::referendum_info(ref_index).ok_or(Error::<T>::BadIndex)?;
 			let h = info.proposal_hash;
@@ -750,7 +752,10 @@ decl_module! {
 		/// # </weight>
 		#[weight = SimpleDispatchInfo::FixedNormal(5_000_000)]
 		fn external_propose(origin, proposal_hash: T::Hash) {
-			T::ExternalOrigin::ensure_origin(origin)?;
+			T::ExternalOrigin::try_origin(origin)
+				.map(|_| ())
+				.or_else(ensure_root)?;
+
 			ensure!(!<NextExternal<T>>::exists(), Error::<T>::DuplicateProposal);
 			if let Some((until, _)) = <Blacklist<T>>::get(proposal_hash) {
 				ensure!(
@@ -777,7 +782,10 @@ decl_module! {
 		/// # </weight>
 		#[weight = SimpleDispatchInfo::FixedNormal(5_000_000)]
 		fn external_propose_majority(origin, proposal_hash: T::Hash) {
-			T::ExternalMajorityOrigin::ensure_origin(origin)?;
+			T::ExternalMajorityOrigin::try_origin(origin)
+				.map(|_| ())
+				.or_else(ensure_root)?;
+
 			<NextExternal<T>>::put((proposal_hash, VoteThreshold::SimpleMajority));
 		}
 
@@ -797,7 +805,10 @@ decl_module! {
 		/// # </weight>
 		#[weight = SimpleDispatchInfo::FixedNormal(5_000_000)]
 		fn external_propose_default(origin, proposal_hash: T::Hash) {
-			T::ExternalDefaultOrigin::ensure_origin(origin)?;
+			T::ExternalDefaultOrigin::try_origin(origin)
+				.map(|_| ())
+				.or_else(ensure_root)?;
+
 			<NextExternal<T>>::put((proposal_hash, VoteThreshold::SuperMajorityAgainst));
 		}
 
@@ -826,7 +837,10 @@ decl_module! {
 			voting_period: T::BlockNumber,
 			delay: T::BlockNumber
 		) {
-			T::FastTrackOrigin::ensure_origin(origin)?;
+			T::FastTrackOrigin::try_origin(origin)
+				.map(|_| ())
+				.or_else(ensure_root)?;
+
 			let (e_proposal_hash, threshold) = <NextExternal<T>>::get().ok_or(Error::<T>::ProposalMissing)?;
 			ensure!(
 				threshold != VoteThreshold::SuperMajorityApprove,
@@ -857,7 +871,7 @@ decl_module! {
 		/// # </weight>
 		#[weight = SimpleDispatchInfo::FixedNormal(200_000)]
 		fn veto_external(origin, proposal_hash: T::Hash) {
-			let who = T::VetoOrigin::ensure_origin(origin)?;
+			let who = ensure_signed(origin)?;
 
 			if let Some((e_proposal_hash, _)) = <NextExternal<T>>::get() {
 				ensure!(proposal_hash == e_proposal_hash, Error::<T>::ProposalMissing);
@@ -869,7 +883,7 @@ decl_module! {
 				.map(|pair| pair.1)
 				.unwrap_or_else(Vec::new);
 			let insert_position = existing_vetoers.binary_search(&who)
-				.err().ok_or(Error::<T>::AlreadyVetoed)?;
+				.err().ok_or(Error::<T>::AlreadyVetoed)?; // TODO: what is the point of this if we are killing?
 
 			existing_vetoers.insert(insert_position, who.clone());
 			let until = <frame_system::Module<T>>::block_number() + T::CooloffPeriod::get();
@@ -937,8 +951,6 @@ decl_module! {
 				None => Err(Error::<T>::NotOpen),
 				Some(ProxyState::Active(_)) => Err(Error::<T>::AlreadyProxy),
 				Some(ProxyState::Open(x)) if &x == &who => {
-					#[cfg(feature = "std")]
-					println!("proxy open mutated to active");
 					*a = Some(ProxyState::Active(who));
 					Ok(())
 				}

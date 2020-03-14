@@ -18,11 +18,9 @@
 
 use super::*;
 
-use frame_system::{RawOrigin, self};
-use sp_io::hashing::blake2_256;
+use frame_system::{RawOrigin, Module as System, self};
 use frame_benchmarking::{benchmarks, account};
-use sp_core::hash::H256;
-use sp_runtime::traits::{Bounded, Dispatchable, StaticLookup};
+use sp_runtime::traits::Bounded;
 use frame_support::traits::{Currency, Get};
 
 use crate::Module as Democracy;
@@ -33,9 +31,6 @@ const MAX_REFERENDUMS: u32 = 100;
 const MAX_USERS: u32 = 100;
 
 fn add_proposals<T: Trait>(number: u32) -> Result<(), &'static str> {
-	#[cfg(feature = "std")]
-	println!("add_proposal {}", number);
-
 	for p in 0 .. number {
 		let other: T::AccountId = account("other", p, SEED);
 		let _ = T::Currency::make_free_balance_be(&other, BalanceOf::<T>::max_value());
@@ -49,13 +44,9 @@ fn add_proposals<T: Trait>(number: u32) -> Result<(), &'static str> {
 }
 
 fn add_referendums<T: Trait>(number: u32) -> Result<(), &'static str> {
-	#[cfg(feature = "std")]
-	println!("add_referendum {}", number);
+	for _ in 0 .. number {
+		add_proposals::<T>(1)?;
 
-	for p in 0 .. number {
-		
-		add_proposals::<T>(1);
-		
 		let vote_threshold = VoteThreshold::SimpleMajority;
 		Democracy::<T>::inject_referendum(
 			0.into(),
@@ -103,7 +94,7 @@ benchmarks! {
 		T::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
 
 		// Add a proposal.
-		add_proposals::<T>(1);
+		add_proposals::<T>(1)?;
 
 		// Inject referendum.
 		let proposal_hash: T::Hash = Default::default();
@@ -140,8 +131,8 @@ benchmarks! {
 		let r = Democracy::<T>::activate_proxy(RawOrigin::Signed(caller).into(), proxy.clone());
 		#[cfg(feature = "std")]
 		println!("result of activate proxy {:?}", r);
-					
-		add_proposals::<T>(1);
+
+		add_proposals::<T>(1)?;
 
 		let proposal_hash: T::Hash = Default::default();
 		let vote_threshold = VoteThreshold::SimpleMajority;
@@ -158,4 +149,213 @@ benchmarks! {
 		};
 
 	}: _(RawOrigin::Signed(proxy), 0u32.into(), v)
+
+	emergency_cancel {
+		let u in ...;
+
+		add_referendums::<T>(1)?;
+
+	}: _(RawOrigin::Root, 0u32.into())
+
+	external_propose {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let proposal_hash: T::Hash = Default::default();
+
+	}: _(RawOrigin::Root, proposal_hash)
+
+	external_propose_majority {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let proposal_hash: T::Hash = Default::default();
+
+	}: _(RawOrigin::Root, proposal_hash)
+
+	external_propose_default {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let proposal_hash: T::Hash = Default::default();
+
+	}: _(RawOrigin::Root, proposal_hash)
+
+	fast_track {
+		let u in ...;
+
+		let proposal_hash: T::Hash = Default::default();
+		Democracy::<T>::external_propose_default(RawOrigin::Root.into(), proposal_hash.clone())?;
+
+		let voting_period = 0;
+		let delay = 0;
+
+	}: _(RawOrigin::Root, proposal_hash, voting_period.into(), delay.into())
+
+	veto_external {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", 0, SEED);
+		let proposal_hash: T::Hash = Default::default();
+		Democracy::<T>::external_propose_default(RawOrigin::Root.into(), proposal_hash.clone())?;
+	
+	}: _(RawOrigin::Signed(caller), proposal_hash)
+
+	cancel_referendum {
+		let u in ...;
+
+		add_referendums::<T>(1)?;
+
+	}: _(RawOrigin::Root, 0u32.into())
+
+	cancel_queued {
+		let u in ...;
+
+		// TODO: we could add more items to the DispatchQueue to bench.
+		add_referendums::<T>(1)?;
+		let block_number: T::BlockNumber = 0.into();
+		let hash: T::Hash = Default::default();
+		let referendum_index: ReferendumIndex = 0u32.into(); 
+		<DispatchQueue<T>>::put(vec![(block_number, hash, referendum_index)]);
+
+	}: _(RawOrigin::Root, 0u32.into())
+
+	open_proxy {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		let proxy: T::AccountId = account("proxy", u + 1, SEED);
+
+	}: _(RawOrigin::Signed(proxy), caller)
+
+	activate_proxy {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		let proxy: T::AccountId = account("proxy", u + 1, SEED);
+
+		Democracy::<T>::open_proxy(RawOrigin::Signed(proxy.clone()).into(), caller.clone())?;
+
+	}: _(RawOrigin::Signed(caller), proxy)
+
+	close_proxy {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		let proxy: T::AccountId = account("proxy", u + 1, SEED);
+
+		Democracy::<T>::open_proxy(RawOrigin::Signed(proxy.clone()).into(), caller.clone())?;
+		Democracy::<T>::activate_proxy(RawOrigin::Signed(caller).into(), proxy.clone())?;
+
+	}: _(RawOrigin::Signed(proxy))
+
+	deactivate_proxy {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		let proxy: T::AccountId = account("proxy", u + 1, SEED);
+
+		Democracy::<T>::open_proxy(RawOrigin::Signed(proxy.clone()).into(), caller.clone())?;
+		Democracy::<T>::activate_proxy(RawOrigin::Signed(caller.clone()).into(), proxy.clone())?;
+
+	}: _(RawOrigin::Signed(caller), proxy)
+
+	delegate {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		T::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
+		let d: T::AccountId = account("delegate", u, SEED);
+
+	}: _(RawOrigin::Signed(caller), d.into(), Conviction::Locked1x)
+
+	undelegate {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		T::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
+
+		for i in 0 .. u {
+			let d: T::AccountId = account("delegator", u + i + 1, SEED);
+			let conviction = Conviction::Locked1x;
+			Democracy::<T>::delegate(RawOrigin::Signed(d.clone()).into(), caller.clone().into(), conviction)?;
+		}
+
+		let d: T::AccountId = account("delegator", u + 1, SEED);
+
+	}: _(RawOrigin::Signed(d))
+
+	clear_public_proposals {
+		let u in ...;
+		// TODO: maybe add some proposals to kill.
+	}: _(RawOrigin::Root)
+
+	note_preimage {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		T::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
+
+		let mut encoded_proposal = vec![];
+		for i in 0 .. u {
+			encoded_proposal.push(Default::default());
+		}
+
+	}: _(RawOrigin::Signed(caller), encoded_proposal)
+
+	note_imminent_preimage {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		T::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
+
+		let mut encoded_proposal = vec![];
+		for i in 0 .. u {
+			encoded_proposal.push(Default::default());
+		}
+
+		let proposal_hash = T::Hashing::hash(&encoded_proposal[..]);
+		let block_number: T::BlockNumber = 0.into();
+		let referendum_index: ReferendumIndex = 0u32.into(); 
+		<DispatchQueue<T>>::put(vec![(block_number, proposal_hash, referendum_index)]);
+
+	}: _(RawOrigin::Signed(caller), encoded_proposal)
+
+	reap_preimage {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		T::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
+
+		let mut encoded_proposal = vec![];
+		for i in 0 .. u {
+			encoded_proposal.push(Default::default());
+		}
+
+		Democracy::<T>::note_preimage(RawOrigin::Signed(caller.clone()).into(), encoded_proposal.clone())?;
+
+		// We need to set this otherwise we get `Early` error.
+		let block_number = T::VotingPeriod::get();
+		System::<T>::set_block_number(block_number.into());
+
+		let proposal_hash = T::Hashing::hash(&encoded_proposal[..]);
+
+	}: _(RawOrigin::Signed(caller), proposal_hash)
+
+	unlock {
+		let u in ...;
+
+		let caller: T::AccountId = account("caller", u, SEED);
+		let locked_until: T::BlockNumber = 0u32.into();
+		Locks::<T>::insert(&caller, locked_until);
+		T::Currency::extend_lock(
+			DEMOCRACY_ID,
+			&caller,
+			Bounded::max_value(),
+			WithdrawReason::Transfer.into()
+		);
+
+		let other = caller.clone();
+
+	}: _(RawOrigin::Signed(caller), other)
 }
