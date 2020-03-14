@@ -212,3 +212,21 @@ impl CallInWasmExt {
 		Self(Box::new(inner))
 	}
 }
+
+/// Something that can spawn tasks and also can be cloned.
+pub trait ClonableSpawn: futures::task::Spawn + Send + Sync {
+	/// Clone as heap-allocated handle.
+	fn clone(&self) -> Box<dyn ClonableSpawn>;
+}
+
+sp_externalities::decl_extension! {
+	/// Task executor extension.
+	pub struct TaskExecutorExt(Box<dyn ClonableSpawn>);
+}
+
+impl TaskExecutorExt {
+	/// New instance of task executor extension.
+	pub fn new(spawn_handle: Box<dyn ClonableSpawn>) -> Self {
+		Self(spawn_handle)
+	}
+}
