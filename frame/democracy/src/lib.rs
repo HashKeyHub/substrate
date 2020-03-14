@@ -871,7 +871,7 @@ decl_module! {
 		/// # </weight>
 		#[weight = SimpleDispatchInfo::FixedNormal(200_000)]
 		fn veto_external(origin, proposal_hash: T::Hash) {
-			let who = ensure_signed(origin)?;
+			let who = ensure_signed(origin)?; // TODO: remove this.
 
 			if let Some((e_proposal_hash, _)) = <NextExternal<T>>::get() {
 				ensure!(proposal_hash == e_proposal_hash, Error::<T>::ProposalMissing);
@@ -883,7 +883,7 @@ decl_module! {
 				.map(|pair| pair.1)
 				.unwrap_or_else(Vec::new);
 			let insert_position = existing_vetoers.binary_search(&who)
-				.err().ok_or(Error::<T>::AlreadyVetoed)?; // TODO: what is the point of this if we are killing?
+				.err().ok_or(Error::<T>::AlreadyVetoed)?;
 
 			existing_vetoers.insert(insert_position, who.clone());
 			let until = <frame_system::Module<T>>::block_number() + T::CooloffPeriod::get();
