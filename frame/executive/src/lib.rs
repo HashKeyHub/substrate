@@ -58,6 +58,7 @@
 //! # pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 //! # pub type Balances = u64;
 //! # pub type AllModules = u64;
+//! # pub type Dispatcher = ();
 //! # pub enum Runtime {};
 //! # use sp_runtime::transaction_validity::{TransactionValidity, UnknownTransaction};
 //! # use sp_runtime::traits::ValidateUnsigned;
@@ -69,7 +70,7 @@
 //! # 	}
 //! # }
 //! /// Executive: handles dispatch to the various modules.
-//! pub type Executive = executive::Executive<Runtime, Block, Context, Runtime, AllModules>;
+//! pub type Executive = executive::Executive<Runtime, Block, Context, Runtime, AllModules, Dispatcher>;
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
