@@ -909,7 +909,13 @@ pub trait Applyable: Sized + Send + Sync {
 	) -> crate::ApplyExtrinsicResult;
 }
 
+/// A `Dispatcher` is a type that dispatches a `Dispatchable`.
+///
+/// Its responsibility is to do central bookkeeping like tracking unspent gas in
+/// addition to the raw dispatch. Please note that `Dispatchable::dispatch` should
+/// not be called directly but always through a `Dispatcher`.
 pub trait Dispatcher<D: Dispatchable> {
+	/// This may do some bookkeeping but must eventually call `dispathchable.dispatch`.
 	fn dispatch(dispatchable: D, origin: <D as Dispatchable>::Origin) -> crate::DispatchResult;
 }
 
