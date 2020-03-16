@@ -27,14 +27,12 @@ mod digest;
 #[cfg(test)]
 mod tests;
 
-pub use self::unchecked_extrinsic::{UncheckedExtrinsic, SignedPayload};
+pub use self::block::{Block, BlockId, SignedBlock};
+pub use self::checked_extrinsic::{apply as apply_checked, CheckedExtrinsic};
+pub use self::digest::{ChangesTrieSignal, Digest, DigestItem, DigestItemRef, OpaqueDigestItemId};
 pub use self::era::{Era, Phase};
-pub use self::checked_extrinsic::CheckedExtrinsic;
 pub use self::header::Header;
-pub use self::block::{Block, SignedBlock, BlockId};
-pub use self::digest::{
-	Digest, DigestItem, DigestItemRef, OpaqueDigestItemId, ChangesTrieSignal,
-};
+pub use self::unchecked_extrinsic::{SignedPayload, UncheckedExtrinsic};
 
 use crate::codec::Encode;
 use sp_std::prelude::*;

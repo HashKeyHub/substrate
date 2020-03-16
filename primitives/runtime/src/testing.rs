@@ -372,15 +372,6 @@ where
 		info: Self::DispatchInfo,
 		len: usize,
 	) -> ApplyExtrinsicResult {
-		let (maybe_who, pre) = if let Some((who, extra)) = self.signature {
-			let pre = Extra::pre_dispatch(extra, &who, &self.call, info.clone(), len)?;
-			(Some(who), pre)
-		} else {
-			let pre = Extra::pre_dispatch_unsigned(&self.call, info.clone(), len)?;
-			(None, pre)
-		};
-		let r = D::dispatch(self.call, maybe_who.into()).map_err(Into::into);
-		Extra::post_dispatch(pre, info.clone(), len);
-		Ok(r)
+		generic::apply_checked::<U, D, _, _, _, _, _>(self.call, self.signature, info, len)
 	}
 }
